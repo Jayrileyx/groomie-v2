@@ -80,14 +80,19 @@ router.get('/me', protect, async (req, res) => {
   }
 });
 
-// PUT /api/auth/me — update own profile (name, phone, avatar) — only sets provided fields
+// PUT /api/auth/me — update own profile (name, phone, avatar, email) — only sets provided fields
 router.put('/me', protect, async (req, res) => {
-  const allowed = ['firstName', 'lastName', 'phone', 'avatar'];
+  const allowed = ['firstName', 'lastName', 'phone', 'avatar', 'email'];
   const update = {};
   for (const key of allowed) {
     if (req.body[key] !== undefined) update[key] = req.body[key];
   }
   try {
+    // Check email uniqueness if changing email
+    if (update.email) {
+      const existing = await User.findOne({ email: update.email, _id: { $ne: req.user.id } });
+      if (existing) return res.status(400).json({ message: 'That email is already in use.' });
+    }
     const user = await User.findByIdAndUpdate(
       req.user.id,
       { $set: update },

@@ -243,6 +243,7 @@ export default function CustomerProfile() {
     lastName:  user?.lastName  || '',
     phone:     user?.phone     || '',
     avatar:    user?.avatar    || '',
+    email:     user?.email     || '',
   });
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
@@ -252,7 +253,7 @@ export default function CustomerProfile() {
     axios.get('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
       .then(res => {
         const u = res.data;
-        setForm({ firstName: u.firstName || '', lastName: u.lastName || '', phone: u.phone || '', avatar: u.avatar || '' });
+        setForm({ firstName: u.firstName || '', lastName: u.lastName || '', phone: u.phone || '', avatar: u.avatar || '', email: u.email || '' });
       })
       .catch(() => {/* keep the pre-filled values on error */});
   }, []);
@@ -311,6 +312,9 @@ export default function CustomerProfile() {
             onChange={e => setForm({ ...form, lastName: e.target.value })}
             className="border rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-300" />
         </div>
+        <input type="email" placeholder="Email" value={form.email}
+          onChange={e => setForm({ ...form, email: e.target.value })}
+          className="border rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-300" />
         <input placeholder="Phone (e.g. 555-867-5309)" value={form.phone}
           onChange={e => setForm({ ...form, phone: e.target.value })}
           className="border rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-300" />

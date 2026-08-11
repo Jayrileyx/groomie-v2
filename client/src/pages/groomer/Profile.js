@@ -741,6 +741,87 @@ export default function GroomerProfile() {
           {availSaving ? 'Saving...' : availSaved ? '✅ Profile Saved' : 'Save Profile'}
         </button>
       </div>
+
+      {/* ── Account Settings ─────────────────────────────────────── */}
+      <AccountSettings token={token} />
+    </div>
+  );
+}
+
+function AccountSettings({ token }) {
+  const [emailForm, setEmailForm] = useState({ email: '' });
+  const [pwForm, setPwForm]       = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [emailMsg, setEmailMsg]   = useState('');
+  const [emailErr, setEmailErr]   = useState('');
+  const [pwMsg, setPwMsg]         = useState('');
+  const [pwErr, setPwErr]         = useState('');
+
+  const handleEmailSave = async (e) => {
+    e.preventDefault();
+    setEmailErr(''); setEmailMsg('');
+    try {
+      await axios.put('/api/auth/me', { email: emailForm.email }, { headers: { Authorization: `Bearer ${token}` } });
+      setEmailMsg('Email updated successfully.');
+      setEmailForm({ email: '' });
+    } catch (err) {
+      setEmailErr(err.response?.data?.message || 'Failed to update email.');
+    }
+  };
+
+  const handlePwSave = async (e) => {
+    e.preventDefault();
+    setPwErr(''); setPwMsg('');
+    if (pwForm.newPassword !== pwForm.confirmPassword) { setPwErr('Passwords do not match.'); return; }
+    if (pwForm.newPassword.length < 6) { setPwErr('New password must be at least 6 characters.'); return; }
+    try {
+      await axios.put('/api/auth/me/password',
+        { currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setPwMsg('Password updated successfully.');
+      setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (err) {
+      setPwErr(err.response?.data?.message || 'Failed to update password.');
+    }
+  };
+
+  const inputClass = "border rounded px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-purple-300 text-sm";
+
+  return (
+    <div className="mt-8 border rounded-xl p-6 flex flex-col gap-6">
+      <h3 className="text-lg font-bold text-gray-800">Account Settings</h3>
+
+      {/* Email */}
+      <div>
+        <h4 className="text-sm font-semibold text-gray-700 mb-2">Change Email</h4>
+        <form onSubmit={handleEmailSave} className="flex flex-col gap-2">
+          <input type="email" placeholder="New email address" value={emailForm.email}
+            onChange={e => setEmailForm({ email: e.target.value })} required className={inputClass} />
+          {emailErr && <p className="text-red-500 text-xs">{emailErr}</p>}
+          {emailMsg && <p className="text-green-600 text-xs">{emailMsg}</p>}
+          <button type="submit" className="bg-purple-500 text-white py-2 rounded hover:bg-purple-600 text-sm font-medium">
+            Update Email
+          </button>
+        </form>
+      </div>
+
+      {/* Password */}
+      <div>
+        <h4 className="text-sm font-semibold text-gray-700 mb-2">Change Password</h4>
+        <form onSubmit={handlePwSave} className="flex flex-col gap-2">
+          <input type="password" placeholder="Current password" value={pwForm.currentPassword}
+            onChange={e => setPwForm(f => ({ ...f, currentPassword: e.target.value }))} required className={inputClass} />
+          <input type="password" placeholder="New password (min 6 characters)" value={pwForm.newPassword}
+            onChange={e => setPwForm(f => ({ ...f, newPassword: e.target.value }))} required className={inputClass} />
+          <input type="password" placeholder="Confirm new password" value={pwForm.confirmPassword}
+            onChange={e => setPwForm(f => ({ ...f, confirmPassword: e.target.value }))} required className={inputClass} />
+          {pwErr && <p className="text-red-500 text-xs">{pwErr}</p>}
+          {pwMsg && <p className="text-green-600 text-xs">{pwMsg}</p>}
+          <button type="submit" className="bg-purple-500 text-white py-2 rounded hover:bg-purple-600 text-sm font-medium">
+            Update Password
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

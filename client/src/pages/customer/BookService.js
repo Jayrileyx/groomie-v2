@@ -38,6 +38,18 @@ function BookServiceForm({ groomerProfileId }) {
   const [petWarning, setPetWarning] = useState(null); // { existingDate, existingService }
   const [bypassWarning, setBypassWarning] = useState(false);
   const [agreedToGroomerTerms, setAgreedToGroomerTerms] = useState(false);
+  const [savedCards, setSavedCards] = useState([]);
+  const [selectedCardId, setSelectedCardId] = useState(''); // '' = new card
+
+  // Load saved cards
+  useEffect(() => {
+    axios.get('/api/payments/cards', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => {
+        setSavedCards(r.data);
+        if (r.data.length > 0) setSelectedCardId(r.data[0].id);
+      })
+      .catch(() => {});
+  }, []);
 
   // If navigated directly (no state), fetch the groomer profile
   useEffect(() => {
@@ -103,36 +115,47 @@ function BookServiceForm({ groomerProfileId }) {
     }
 
     // Card is required — guard before async work
-    if (!stripe || !elements) {
-      setCardError('Payment system is still loading. Please wait a moment and try again.');
-      return;
-    }
-    if (!cardComplete) {
-      setCardError('Please enter your complete card details before submitting.');
-      return;
+    const usingNewCard = selectedCardId === '';
+    if (usingNewCard) {
+      if (!stripe || !elements) {
+        setCardError('Payment system is still loading. Please wait a moment and try again.');
+        return;
+      }
+      if (!cardComplete) {
+        setCardError('Please enter your complete card details before submitting.');
+        return;
+      }
     }
 
     setSubmitting(true);
     setCardError('');
     try {
-      // 1. Save card via SetupIntent (always required)
-      const { data: { clientSecret, stripeCustomerId: custId } } = await axios.post(
-        '/api/payments/setup-intent', {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const stripeCustomerId = custId;
+      let stripePaymentMethodId;
+      let stripeCustomerId;
 
-      const cardEl = elements.getElement(CardElement);
-      const { setupIntent, error: stripeErr } = await stripe.confirmCardSetup(clientSecret, {
-        payment_method: { card: cardEl },
-      });
-
-      if (stripeErr) {
-        setCardError(stripeErr.message);
-        setSubmitting(false);
-        return;
+      if (usingNewCard) {
+        // Save new card via SetupIntent
+        const { data: { clientSecret, stripeCustomerId: custId } } = await axios.post(
+          '/api/payments/setup-intent', {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        stripeCustomerId = custId;
+        const cardEl = elements.getElement(CardElement);
+        const { setupIntent, error: stripeErr } = await stripe.confirmCardSetup(clientSecret, {
+          payment_method: { card: cardEl },
+        });
+        if (stripeErr) {
+          setCardError(stripeErr.message);
+          setSubmitting(false);
+          return;
+        }
+        stripePaymentMethodId = setupIntent.payment_method;
+      } else {
+        // Use existing saved card
+        stripePaymentMethodId = selectedCardId;
+        const userRes = await axios.get('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+        stripeCustomerId = userRes.data.stripeCustomerId;
       }
-      const stripePaymentMethodId = setupIntent.payment_method;
 
       // 2. Create booking with saved card info
       const groomerId = groomer?.user?._id || groomer?.user;
@@ -345,23 +368,44 @@ function BookServiceForm({ groomerProfileId }) {
 
         {/* Card details — required */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             Payment Method <span className="text-red-500">*</span>
           </label>
-          <div className={`border rounded px-4 py-3 focus-within:ring-2 focus-within:ring-purple-300 ${cardError ? 'border-red-400' : ''}`}>
-            <CardElement
-              onChange={e => {
-                setCardComplete(e.complete);
-                setCardError(e.error ? e.error.message : '');
-              }}
-              options={{
-                style: {
-                  base: { fontSize: '14px', color: '#374151', '::placeholder': { color: '#9ca3af' } },
-                  invalid: { color: '#ef4444' },
-                },
-              }}
-            />
-          </div>
+
+          {savedCards.length > 0 && (
+            <div className="flex flex-col gap-2 mb-3">
+              {savedCards.map(card => (
+                <label key={card.id} className={`flex items-center gap-3 border rounded-lg px-4 py-3 cursor-pointer transition ${selectedCardId === card.id ? 'border-purple-400 bg-purple-50' : 'border-gray-200 hover:border-purple-200'}`}>
+                  <input type="radio" name="card" value={card.id} checked={selectedCardId === card.id} onChange={() => setSelectedCardId(card.id)} className="accent-purple-600" />
+                  <span className="text-sm font-medium capitalize">{card.brand}</span>
+                  <span className="text-sm text-gray-600">•••• {card.last4}</span>
+                  <span className="text-xs text-gray-400 ml-auto">Expires {card.expMonth}/{card.expYear}</span>
+                </label>
+              ))}
+              <label className={`flex items-center gap-3 border rounded-lg px-4 py-3 cursor-pointer transition ${selectedCardId === '' ? 'border-purple-400 bg-purple-50' : 'border-gray-200 hover:border-purple-200'}`}>
+                <input type="radio" name="card" value="" checked={selectedCardId === ''} onChange={() => setSelectedCardId('')} className="accent-purple-600" />
+                <span className="text-sm font-medium">+ Use a new card</span>
+              </label>
+            </div>
+          )}
+
+          {selectedCardId === '' && (
+            <div className={`border rounded px-4 py-3 focus-within:ring-2 focus-within:ring-purple-300 ${cardError ? 'border-red-400' : ''}`}>
+              <CardElement
+                onChange={e => {
+                  setCardComplete(e.complete);
+                  setCardError(e.error ? e.error.message : '');
+                }}
+                options={{
+                  style: {
+                    base: { fontSize: '14px', color: '#374151', '::placeholder': { color: '#9ca3af' } },
+                    invalid: { color: '#ef4444' },
+                  },
+                }}
+              />
+            </div>
+          )}
+
           <p className="text-xs text-gray-400 mt-1">
             A valid card is required to request an appointment. You won't be charged until after your service is complete.
           </p>
@@ -370,9 +414,9 @@ function BookServiceForm({ groomerProfileId }) {
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
-        <button type="submit" disabled={submitting || !stripe || !cardComplete}
+        <button type="submit" disabled={submitting || !stripe || (selectedCardId === '' && !cardComplete)}
           className="bg-purple-500 text-white py-3 rounded hover:bg-purple-600 font-medium disabled:opacity-50">
-          {submitting ? 'Saving card & sending request...' : 'Send Booking Request'}
+          {submitting ? 'Sending request...' : 'Send Booking Request'}
         </button>
         <p className="text-xs text-gray-400 text-center">
           By sending this request you agree to Groomie's{' '}

@@ -129,11 +129,14 @@ export default function GroomerProfile() {
 
   const saveAvailability = async () => {
     setAvailSaving(true);
+    const profileOk = await saveProfile();
+    if (!profileOk) { setAvailSaving(false); return; }
     try {
       const availability = avail
         .map((d, i) => d.open ? { dayOfWeek: i, startTime: d.startTime, endTime: d.endTime } : null)
         .filter(Boolean);
       await axios.patch('/api/groomers/me/availability', { availability, blockedDates }, { headers: { Authorization: `Bearer ${token}` } });
+      setAvailSaved(true);
       setEditing(false);
     } catch {
       setError('Failed to save availability');
@@ -587,9 +590,6 @@ export default function GroomerProfile() {
               Cancel
             </button>
           )}
-          <button type="submit" className="flex-1 bg-purple-500 text-white py-3 rounded hover:bg-purple-600 font-medium">
-            Save Profile
-          </button>
         </div>
       </form>
 
@@ -738,7 +738,7 @@ export default function GroomerProfile() {
           disabled={availSaving}
           className="w-full bg-purple-500 text-white py-3 rounded hover:bg-purple-600 font-medium disabled:opacity-50"
         >
-          {availSaving ? 'Saving...' : availSaved ? '✅ Availability Saved' : 'Save Availability'}
+          {availSaving ? 'Saving...' : availSaved ? '✅ Profile Saved' : 'Save Profile'}
         </button>
       </div>
     </div>

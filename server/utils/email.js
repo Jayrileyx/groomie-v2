@@ -306,12 +306,26 @@ function newGroomerPendingReview({ adminEmail, groomerName, groomerEmail }) {
   });
 }
 
+// 12. New message notification
+function newMessage({ recipientEmail, recipientName, senderName, preview }) {
+  return sendEmail({
+    to: recipientEmail,
+    subject: `New message from ${senderName}`,
+    html: wrap(`New message from ${senderName}`, [
+      p(`Hi ${strong(recipientName)}, you have a new message!`),
+      infoBox([`💬 "${preview}"`]),
+      btn('View Message', `${CLIENT}/messages`),
+    ].join('')),
+  });
+}
+
 module.exports = {
   refundIssued,
   newBookingRequest,
   bookingConfirmed,
   bookingDeclined,
   appointmentCompleted,
+  newMessage,
   groomercancelled,
   customerCancelled,
   bookingRescheduled,

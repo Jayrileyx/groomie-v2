@@ -4,6 +4,8 @@ const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
+const notify = require('../utils/notify');
+const email = require('../utils/email');
 
 // GET /api/messages — list all conversations for current user
 router.get('/', protect, async (req, res) => {
@@ -112,6 +114,23 @@ router.post('/:conversationId', protect, async (req, res) => {
     await conversation.save();
 
     const populated = await message.populate('sender', 'firstName lastName avatar');
+
+    // Notify the recipient
+    const sender = await User.findById(req.user.id).select('firstName lastName');
+    const recipient = await User.findById(otherId).select('firstName lastName email');
+    const senderName = `${sender.firstName} ${sender.lastName}`;
+    const preview = content.trim().slice(0, 80);
+
+    notify(otherId, 'new_message', `New message from ${senderName}: "${preview}"`);
+    if (recipient?.email) {
+      email.newMessage({
+        recipientEmail: recipient.email,
+        recipientName: recipient.firstName,
+        senderName,
+        preview,
+      });
+    }
+
     res.status(201).json(populated);
   } catch (err) {
     res.status(500).json({ message: err.message });

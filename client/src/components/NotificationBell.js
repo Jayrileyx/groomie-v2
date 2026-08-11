@@ -11,6 +11,7 @@ const TYPE_ICON = {
   cancelled:    '🚫',
   rescheduled:  '🔄',
   review:       '⭐',
+  new_message:  '💬',
 };
 
 function timeAgo(dateStr) {
@@ -24,6 +25,7 @@ function timeAgo(dateStr) {
 // Map notification type + recipient role → destination URL with tab
 function getRoute(n, role) {
   const { type, reviewId } = n;
+  if (type === 'new_message') return '/messages';
   if (role === 'groomer') {
     if (type === 'new_booking' || type === 'rescheduled') return '/groomer/bookings?tab=pending';
     if (type === 'cancelled')                               return '/groomer/bookings?tab=cancelled';

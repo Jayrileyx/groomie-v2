@@ -1,0 +1,24 @@
+{
+  "name": "groomie-v2-server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.0",
+    "mongodb": "^7.5.0",
+    "mongoose": "^7.3.1",
+    "multer": "^2.2.0",
+    "nodemailer": "^9.0.5",
+    "stripe": "^12.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

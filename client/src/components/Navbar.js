@@ -94,13 +94,6 @@ export default function Navbar() {
           <>
             {roleLinks()}
             <NotificationBell />
-            {user?.avatar ? (
-              <img src={user.avatar} alt="avatar" className="w-7 h-7 rounded-full object-cover border border-white opacity-90" />
-            ) : (
-              <span className="w-7 h-7 rounded-full bg-white bg-opacity-20 flex items-center justify-center text-xs font-bold">
-                {(user?.firstName?.[0] || user?.username?.[0] || '?').toUpperCase()}
-              </span>
-            )}
             <span className="opacity-70">Hi, {user?.firstName || user?.username}</span>
             <button onClick={handleLogout} className="bg-white text-purple-600 px-3 py-1 rounded-full font-semibold text-sm hover:bg-purple-50 transition-colors">
               Logout

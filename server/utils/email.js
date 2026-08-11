@@ -30,16 +30,7 @@ const wrap = (title, body) => `
         <!-- Header -->
         <tr>
           <td style="background:linear-gradient(135deg,#9333ea,#d946ef);padding:24px 32px;">
-            <table cellpadding="0" cellspacing="0">
-              <tr>
-                <td style="vertical-align:middle;padding-right:12px;">
-                  <img src="${CLIENT}/icon-192.png" width="44" height="44" alt="Groomie" style="display:block;border-radius:10px;" />
-                </td>
-                <td style="vertical-align:middle;">
-                  <span style="color:#fff;font-size:22px;font-weight:700;letter-spacing:-0.5px;">Groomie</span>
-                </td>
-              </tr>
-            </table>
+            <span style="color:#fff;font-size:26px;font-weight:800;letter-spacing:-0.5px;">🐾 Groomie</span>
           </td>
         </tr>
 

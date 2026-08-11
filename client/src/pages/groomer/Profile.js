@@ -89,6 +89,10 @@ export default function GroomerProfile() {
       setError('Please add at least one service before saving.');
       return false;
     }
+    if (!avail.some(d => d.open)) {
+      setError('Please set your availability for at least one day before saving.');
+      return false;
+    }
     try {
       const updated = await axios.put('/api/groomers/me', {
         ...form,

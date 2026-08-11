@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 export default function Register() {
+  const { login } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1); // 1 = pick role, 2 = fill form
   const [role, setRole] = useState('');
@@ -24,8 +26,14 @@ export default function Register() {
       return;
     }
     try {
-      await axios.post('/api/auth/register', { ...form, role, agreedToTerms });
-      navigate('/login?registered=true');
+      const res = await axios.post('/api/auth/register', { ...form, role, agreedToTerms });
+      if (res.data.token) {
+        // Auto-login and redirect
+        login(res.data.token, res.data.user);
+        navigate(role === 'groomer' ? '/groomer/profile?setup=true' : '/');
+      } else {
+        navigate('/login?registered=true');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
     }

@@ -29,8 +29,17 @@ const wrap = (title, body) => `
 
         <!-- Header -->
         <tr>
-          <td style="background:#4f46e5;padding:24px 32px;">
-            <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;letter-spacing:-0.5px;">🐾 Groomie</h1>
+          <td style="background:linear-gradient(135deg,#9333ea,#d946ef);padding:24px 32px;">
+            <table cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="vertical-align:middle;padding-right:12px;">
+                  <img src="${CLIENT}/icon-192.png" width="44" height="44" alt="Groomie" style="display:block;border-radius:10px;" />
+                </td>
+                <td style="vertical-align:middle;">
+                  <span style="color:#fff;font-size:22px;font-weight:700;letter-spacing:-0.5px;">Groomie</span>
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
 
@@ -62,14 +71,14 @@ const strong = (text) => `<strong style="color:#1f2937;">${text}</strong>`;
 const btn = (label, url) => `
   <table cellpadding="0" cellspacing="0" style="margin:20px 0;">
     <tr>
-      <td style="background:#4f46e5;border-radius:8px;padding:12px 24px;">
+      <td style="background:#9333ea;border-radius:8px;padding:12px 24px;">
         <a href="${url}" style="color:#fff;font-size:15px;font-weight:600;text-decoration:none;">${label}</a>
       </td>
     </tr>
   </table>`;
 const divider = () => `<hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;" />`;
 const infoBox = (lines) => `
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4ff;border-radius:8px;margin:16px 0;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf5ff;border-radius:8px;margin:16px 0;">
     <tr><td style="padding:16px;">
       ${lines.map(l => `<p style="margin:0 0 6px;font-size:14px;color:#374151;">${l}</p>`).join('')}
     </td></tr>

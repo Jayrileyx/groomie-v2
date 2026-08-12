@@ -20,7 +20,7 @@ export default function Terms() {
 
         <section>
           <h2 className="text-lg font-semibold text-gray-800 mb-2">3. Accounts</h2>
-          <p>You are responsible for maintaining the confidentiality of your account credentials and for all activity that occurs under your account. Notify us immediately at support@groomie.com if you suspect unauthorized use of your account. Groomie reserves the right to suspend or terminate accounts that violate these Terms.</p>
+          <p>You are responsible for maintaining the confidentiality of your account credentials and for all activity that occurs under your account. Notify us immediately at support@groomieapp.com if you suspect unauthorized use of your account. Groomie reserves the right to suspend or terminate accounts that violate these Terms.</p>
         </section>
 
         <section>
@@ -60,7 +60,7 @@ export default function Terms() {
 
         <section>
           <h2 className="text-lg font-semibold text-gray-800 mb-2">11. Contact</h2>
-          <p>Questions about these Terms? Email us at <a href="mailto:support@groomie.com" className="text-purple-600 hover:underline">support@groomie.com</a>.</p>
+          <p>Questions about these Terms? Email us at <a href="mailto:support@groomieapp.com" className="text-purple-600 hover:underline">support@groomieapp.com</a>.</p>
         </section>
 
       </div>

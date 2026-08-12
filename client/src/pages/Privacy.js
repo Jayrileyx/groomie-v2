@@ -35,7 +35,7 @@ export default function Privacy() {
 
         <section>
           <h2 className="text-lg font-semibold text-gray-800 mb-2">6. Data Retention</h2>
-          <p>We retain your account information for as long as your account is active. Booking records and signed waivers are retained for a minimum of 3 years for legal and dispute resolution purposes. You may request deletion of your account by contacting support@groomie.com; note that certain records may be retained as required by law.</p>
+          <p>We retain your account information for as long as your account is active. Booking records and signed waivers are retained for a minimum of 3 years for legal and dispute resolution purposes. You may request deletion of your account by contacting support@groomieapp.com; note that certain records may be retained as required by law.</p>
         </section>
 
         <section>
@@ -45,12 +45,12 @@ export default function Privacy() {
 
         <section>
           <h2 className="text-lg font-semibold text-gray-800 mb-2">8. Your Rights</h2>
-          <p>You have the right to access, correct, or delete the personal information we hold about you. To exercise these rights, contact us at support@groomie.com. We will respond within 30 days.</p>
+          <p>You have the right to access, correct, or delete the personal information we hold about you. To exercise these rights, contact us at support@groomieapp.com. We will respond within 30 days.</p>
         </section>
 
         <section>
           <h2 className="text-lg font-semibold text-gray-800 mb-2">9. Children's Privacy</h2>
-          <p>Groomie is not directed at children under 18. We do not knowingly collect personal information from minors. If you believe a minor has created an account, contact us at support@groomie.com.</p>
+          <p>Groomie is not directed at children under 18. We do not knowingly collect personal information from minors. If you believe a minor has created an account, contact us at support@groomieapp.com.</p>
         </section>
 
         <section>
@@ -60,7 +60,7 @@ export default function Privacy() {
 
         <section>
           <h2 className="text-lg font-semibold text-gray-800 mb-2">11. Contact</h2>
-          <p>Privacy questions or requests? Email us at <a href="mailto:support@groomie.com" className="text-purple-600 hover:underline">support@groomie.com</a>.</p>
+          <p>Privacy questions or requests? Email us at <a href="mailto:support@groomieapp.com" className="text-purple-600 hover:underline">support@groomieapp.com</a>.</p>
         </section>
 
       </div>

@@ -8,6 +8,7 @@ const { protect, restrictTo } = require('../middleware/auth');
 
 const adminOnly = [protect, restrictTo('admin')];
 const email = require('../utils/email');
+const notify = require('../utils/notify');
 const Conversation = require('../models/Conversation');
 
 // GET /api/admin/support-contact — returns admin user info for support messaging (any authenticated user)
@@ -163,13 +164,16 @@ router.patch('/groomers/:id/verify', ...adminOnly, async (req, res) => {
     const profile = await GroomerProfile.findByIdAndUpdate(req.params.id, update, { new: true })
       .populate('user', 'email firstName lastName');
 
-    // Email the groomer
-    if (profile?.user?.email) {
+    // Notify + email the groomer
+    if (profile?.user) {
       const groomerName = `${profile.user.firstName} ${profile.user.lastName}`.trim();
       if (status === 'approved') {
-        email.groomerApproved({ groomerEmail: profile.user.email, groomerName });
+        notify(profile.user._id, 'profile_approved', '🎉 Your groomer profile has been approved! You\'re now visible to customers.');
+        if (profile.user.email) email.groomerApproved({ groomerEmail: profile.user.email, groomerName });
       } else {
-        email.groomerRejected({ groomerEmail: profile.user.email, groomerName, reason: rejectionReason || '' });
+        const reason = rejectionReason ? `: ${rejectionReason}` : '. Please update your profile and resubmit.';
+        notify(profile.user._id, 'profile_rejected', `Your profile was not approved${reason}`);
+        if (profile.user.email) email.groomerRejected({ groomerEmail: profile.user.email, groomerName, reason: rejectionReason || '' });
       }
     }
 

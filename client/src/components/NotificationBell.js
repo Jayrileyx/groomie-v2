@@ -4,14 +4,16 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 
 const TYPE_ICON = {
-  new_booking:  '📅',
-  confirmed:    '✅',
-  declined:     '❌',
-  completed:    '🏁',
-  cancelled:    '🚫',
-  rescheduled:  '🔄',
-  review:       '⭐',
-  new_message:  '💬',
+  new_booking:       '📅',
+  confirmed:         '✅',
+  declined:          '❌',
+  completed:         '🏁',
+  cancelled:         '🚫',
+  rescheduled:       '🔄',
+  review:            '⭐',
+  new_message:       '💬',
+  profile_approved:  '🎉',
+  profile_rejected:  '⚠️',
 };
 
 function timeAgo(dateStr) {
@@ -26,6 +28,7 @@ function timeAgo(dateStr) {
 function getRoute(n, role) {
   const { type, reviewId } = n;
   if (type === 'new_message') return '/messages';
+  if (type === 'profile_approved' || type === 'profile_rejected') return '/groomer/profile';
   if (role === 'groomer') {
     if (type === 'new_booking' || type === 'rescheduled') return '/groomer/bookings?tab=pending';
     if (type === 'cancelled')                               return '/groomer/bookings?tab=cancelled';

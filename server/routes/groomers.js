@@ -72,11 +72,31 @@ router.post('/me/submit-review', protect, restrictTo('groomer'), async (req, res
 // PUT /api/groomers/me — groomer updates their own profile
 router.put('/me', protect, restrictTo('groomer'), async (req, res) => {
   try {
+    // Fetch previous state to detect first-complete save
+    const prev = await GroomerProfile.findOne({ user: req.user.id }).select('bio services submittedForReview');
+
     const profile = await GroomerProfile.findOneAndUpdate(
       { user: req.user.id },
       { $set: req.body },
       { new: true, runValidators: true }
     );
+
+    // Auto-notify admin on first complete save (bio + services now present, never submitted before)
+    const isFirstComplete = !prev?.submittedForReview &&
+      !prev?.bio &&
+      req.body.bio &&
+      (req.body.services?.length > 0 || prev?.services?.length > 0);
+
+    if (isFirstComplete) {
+      await GroomerProfile.findOneAndUpdate({ user: req.user.id }, { submittedForReview: true });
+      const groomer = await User.findById(req.user.id).select('firstName lastName email');
+      const groomerName = `${groomer?.firstName} ${groomer?.lastName}`.trim();
+      const adminUsers = await User.find({ role: 'admin' }).select('email');
+      adminUsers.forEach(admin => {
+        email.newGroomerPendingReview({ adminEmail: admin.email, groomerName, groomerEmail: groomer?.email });
+      });
+    }
+
     res.json(profile);
   } catch (err) {
     res.status(500).json({ message: err.message });

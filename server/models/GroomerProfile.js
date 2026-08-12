@@ -19,8 +19,9 @@ const groomerProfileSchema = new mongoose.Schema({
   photos:             [String], // URLs
   rating:             { type: Number, default: 0 },
   reviewCount:        { type: Number, default: 0 },
-  verificationStatus: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
-  rejectionReason:    { type: String },
+  verificationStatus:   { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  rejectionReason:      { type: String },
+  submittedForReview:   { type: Boolean, default: false },
   verificationDocs:   [String], // URLs to submitted documents
   cancellationWindowHours: { type: Number, default: 24 }, // hours before appt customer can reschedule/cancel
   stripeAccountId:    { type: String }, // for payouts

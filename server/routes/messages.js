@@ -120,7 +120,6 @@ router.post('/:conversationId', protect, async (req, res) => {
     const recipient = await User.findById(otherId).select('firstName lastName email');
     const senderName = `${sender.firstName} ${sender.lastName}`;
     const preview = content.trim().slice(0, 80);
-
     notify(otherId, 'new_message', `New message from ${senderName}: "${preview}"`);
     if (recipient?.email) {
       email.newMessage({

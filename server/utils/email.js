@@ -1,18 +1,5 @@
-const nodemailer = require('nodemailer');
-
-// ── Transporter ───────────────────────────────────────────────────────────────
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  connectionTimeout: 5000,  // fail fast if Gmail is unreachable
-  greetingTimeout: 5000,
-  socketTimeout: 10000,
-});
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ── Base template ─────────────────────────────────────────────────────────────
 const wrap = (title, body) => `
@@ -80,26 +67,20 @@ const fmtDate = (d) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { w
 const fmtTime = (t) => { const [h, m] = t.split(':').map(Number); const ap = h < 12 ? 'AM' : 'PM'; return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${ap}`; };
 
 // ── Send helper ───────────────────────────────────────────────────────────────
-const PLACEHOLDER = ['your.gmail', 'your_app_password', 'REPLACE'];
-const emailConfigured = () =>
-  process.env.EMAIL_USER &&
-  process.env.EMAIL_PASS &&
-  !PLACEHOLDER.some(p => (process.env.EMAIL_USER + process.env.EMAIL_PASS).includes(p));
 
 async function sendEmail({ to, subject, html }) {
-  if (!emailConfigured()) {
-    console.log(`[email] Not configured — skipping "${subject}" to ${to}`);
+  if (!process.env.RESEND_API_KEY) {
+    console.log(`[email] RESEND_API_KEY not set — skipping "${subject}" to ${to}`);
     return;
   }
   try {
-    await transporter.sendMail({
-      from: `"Groomie" <${process.env.EMAIL_USER}>`,
+    await resend.emails.send({
+      from: 'Groomie <onboarding@resend.dev>',
       to,
       subject,
       html,
     });
   } catch (err) {
-    // Never crash the app over a failed email
     console.error('[email] Failed to send:', err.message);
   }
 }

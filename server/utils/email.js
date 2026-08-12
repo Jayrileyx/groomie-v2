@@ -74,12 +74,13 @@ async function sendEmail({ to, subject, html }) {
     return;
   }
   try {
-    await resend.emails.send({
-      from: 'Groomie <onboarding@resend.dev>',
+    const result = await resend.emails.send({
+      from: 'Groomie <hello@groomieapp.com>',
       to,
       subject,
       html,
     });
+    console.log('[email] Sent to', to, '| result:', JSON.stringify(result));
   } catch (err) {
     console.error('[email] Failed to send:', err.message);
   }

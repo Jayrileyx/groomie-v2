@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
+import ErrorBoundary from './components/ErrorBoundary';
 import { Elements } from '@stripe/react-stripe-js';
 import stripePromise from './stripe';
 
@@ -44,6 +45,7 @@ export default function App() {
     <AuthProvider>
       <Elements stripe={stripePromise}>
       <BrowserRouter>
+        <ErrorBoundary>
         <Navbar />
         <main className="max-w-4xl mx-auto px-4 py-8">
           <Routes>
@@ -76,6 +78,7 @@ export default function App() {
             <Route path="/admin" element={<PrivateRoute role="admin"><AdminDashboard /></PrivateRoute>} />
           </Routes>
         </main>
+        </ErrorBoundary>
       </BrowserRouter>
       </Elements>
     </AuthProvider>

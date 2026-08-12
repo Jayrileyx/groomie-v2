@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
@@ -25,6 +25,17 @@ const formatDuration = (mins) => {
   if (h) return `${h} hr`;
   return `${m} min`;
 };
+
+// ── Empty state ───────────────────────────────────────────────────────────────
+function EmptyState({ icon, title, subtitle }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-center">
+      <div className="text-5xl mb-3">{icon}</div>
+      <p className="text-gray-600 font-medium">{title}</p>
+      {subtitle && <p className="text-gray-400 text-sm mt-1">{subtitle}</p>}
+    </div>
+  );
+}
 
 // ── Groomer slide-in drawer ───────────────────────────────────────────────────
 function GroomerDrawer({ profile, onClose, onVerify, onSuspend, onDelete }) {
@@ -138,7 +149,6 @@ function GroomerDrawer({ profile, onClose, onVerify, onSuspend, onDelete }) {
 
         {/* Actions */}
         <div className="border-t pt-4 flex flex-col gap-2">
-          {/* Verify actions */}
           {!rejectMode && (
             <>
               {profile.verificationStatus !== 'approved' && (
@@ -240,22 +250,24 @@ function CustomerDrawer({ userId, onClose, onSuspend, onDelete, token }) {
 
             <div className="mb-5">
               <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Recent Bookings ({bookings.length})</p>
-              {bookings.length === 0 ? <p className="text-sm text-gray-400">No bookings yet.</p> : (
-                <div className="flex flex-col gap-2">
-                  {bookings.map(b => (
-                    <div key={b._id} className="border rounded px-3 py-2 text-sm">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-medium">{b.service?.name}</p>
-                          <p className="text-gray-500 text-xs">with {b.groomer?.firstName} {b.groomer?.lastName}</p>
-                          <p className="text-gray-400 text-xs">{formatDate(b.date)} at {formatTime(b.time)}</p>
+              {bookings.length === 0
+                ? <p className="text-sm text-gray-400">No bookings yet.</p>
+                : (
+                  <div className="flex flex-col gap-2">
+                    {bookings.map(b => (
+                      <div key={b._id} className="border rounded px-3 py-2 text-sm">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium">{b.service?.name}</p>
+                            <p className="text-gray-500 text-xs">with {b.groomer?.firstName} {b.groomer?.lastName}</p>
+                            <p className="text-gray-400 text-xs">{formatDate(b.date)} at {formatTime(b.time)}</p>
+                          </div>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${BOOKING_BADGE[b.status]}`}>{b.status}</span>
                         </div>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${BOOKING_BADGE[b.status]}`}>{b.status}</span>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
             </div>
 
             <div className="border-t pt-4 flex flex-col gap-2">
@@ -290,23 +302,30 @@ export default function AdminDashboard() {
   const [supportConvos, setSupportConvos] = useState([]);
   const [chargingId, setChargingId] = useState(null);
   const [refundingId, setRefundingId] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [selectedGroomer, setSelectedGroomer] = useState(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [message, setMessage] = useState('');
   const [bookingFilter, setBookingFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
-  const fetchAll = () => {
-    axios.get('/api/admin/stats', { headers }).then(r => setStats(r.data)).catch(() => {});
-    axios.get('/api/admin/groomers/pending', { headers }).then(r => setPending(r.data));
-    axios.get('/api/admin/groomers', { headers }).then(r => setAllGroomers(r.data));
-    axios.get('/api/admin/users', { headers }).then(r => setCustomers(r.data.filter(u => u.role === 'customer')));
-    axios.get('/api/admin/bookings', { headers }).then(r => setBookings(r.data)).catch(() => {});
-    axios.get('/api/admin/reviews', { headers }).then(r => setReviews(r.data)).catch(() => {});
-    axios.get('/api/admin/bookings/unpaid', { headers }).then(r => setUnpaidBookings(r.data)).catch(() => {});
-    axios.get('/api/admin/support/conversations', { headers }).then(r => setSupportConvos(r.data)).catch(() => {});
-  };
+  const fetchAll = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.allSettled([
+      axios.get('/api/admin/stats', { headers }).then(r => setStats(r.data)),
+      axios.get('/api/admin/groomers/pending', { headers }).then(r => setPending(r.data)),
+      axios.get('/api/admin/groomers', { headers }).then(r => setAllGroomers(r.data)),
+      axios.get('/api/admin/users', { headers }).then(r => setCustomers(r.data.filter(u => u.role === 'customer'))),
+      axios.get('/api/admin/bookings', { headers }).then(r => setBookings(r.data)),
+      axios.get('/api/admin/reviews', { headers }).then(r => setReviews(r.data)),
+      axios.get('/api/admin/bookings/unpaid', { headers }).then(r => setUnpaidBookings(r.data)),
+      axios.get('/api/admin/support/conversations', { headers }).then(r => setSupportConvos(r.data)),
+    ]);
+    setRefreshing(false);
+  }, []);
 
   useEffect(() => { fetchAll(); }, []);
 
@@ -366,13 +385,20 @@ export default function AdminDashboard() {
     const q = search.toLowerCase();
     return bookings
       .filter(b => bookingFilter === 'all' || b.status === bookingFilter)
+      .filter(b => {
+        if (!dateFrom && !dateTo) return true;
+        const d = new Date(b.date);
+        if (dateFrom && d < new Date(dateFrom)) return false;
+        if (dateTo && d > new Date(dateTo)) return false;
+        return true;
+      })
       .filter(b =>
         !q ||
         `${b.customer?.firstName} ${b.customer?.lastName}`.toLowerCase().includes(q) ||
         `${b.groomer?.firstName} ${b.groomer?.lastName}`.toLowerCase().includes(q) ||
         b.service?.name?.toLowerCase().includes(q)
       );
-  }, [bookings, bookingFilter, search]);
+  }, [bookings, bookingFilter, search, dateFrom, dateTo]);
 
   const filteredReviews = useMemo(() => {
     const q = search.toLowerCase();
@@ -412,18 +438,29 @@ export default function AdminDashboard() {
   const unreadSupport = supportConvos.reduce((sum, c) => sum + (c.unread || 0), 0);
 
   const tabs = [
-    { id: 'pending',   label: `Pending (${pending.length})` },
-    { id: 'groomers',  label: `Groomers (${allGroomers.length})` },
-    { id: 'customers', label: `Customers (${customers.length})` },
-    { id: 'bookings',  label: `Bookings (${bookings.length})` },
-    { id: 'reviews',   label: `Reviews (${reviews.length})` },
-    { id: 'unpaid',    label: `Unpaid (${unpaidBookings.length})${unpaidBookings.length > 0 ? ' 🔴' : ''}` },
-    { id: 'support',   label: `Support (${supportConvos.length})${unreadSupport > 0 ? ` 🔴` : ''}` },
+    { id: 'pending',   label: `Pending`, count: pending.length, alert: pending.length > 0 },
+    { id: 'groomers',  label: `Groomers`, count: allGroomers.length },
+    { id: 'customers', label: `Customers`, count: customers.length },
+    { id: 'bookings',  label: `Bookings`, count: bookings.length },
+    { id: 'reviews',   label: `Reviews`, count: reviews.length },
+    { id: 'unpaid',    label: `Unpaid`, count: unpaidBookings.length, alert: unpaidBookings.length > 0 },
+    { id: 'support',   label: `Support`, count: supportConvos.length, alert: unreadSupport > 0 },
   ];
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-purple-600 mb-4">Admin Dashboard</h2>
+      {/* Header with refresh */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-bold text-purple-600">Admin Dashboard</h2>
+        <button
+          onClick={fetchAll}
+          disabled={refreshing}
+          className="flex items-center gap-1.5 text-sm text-gray-500 border border-gray-300 rounded-lg px-3 py-1.5 hover:border-purple-400 hover:text-purple-600 transition disabled:opacity-40"
+        >
+          <span className={refreshing ? 'animate-spin inline-block' : ''}>↻</span>
+          {refreshing ? 'Refreshing…' : 'Refresh'}
+        </button>
+      </div>
 
       {message && (
         <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-2 rounded-lg mb-4">
@@ -433,12 +470,13 @@ export default function AdminDashboard() {
 
       {/* Stats bar */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
           {[
             { label: 'Groomers', value: stats.totalGroomers, sub: `${stats.approvedGroomers} approved · ${stats.pendingGroomers} pending`, color: 'text-purple-600' },
             { label: 'Customers', value: stats.totalCustomers, color: 'text-blue-600' },
             { label: 'Bookings', value: stats.totalBookings, sub: `${stats.completedBookings} completed`, color: 'text-green-600' },
             { label: 'Reviews', value: stats.totalReviews, color: 'text-yellow-600' },
+            { label: 'Revenue', value: `$${Number(stats.revenue || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, sub: 'from completed bookings', color: 'text-emerald-600' },
           ].map(s => (
             <div key={s.label} className="border rounded-xl p-4 text-center">
               <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
@@ -452,14 +490,17 @@ export default function AdminDashboard() {
       {/* Tabs */}
       <div className="flex gap-2 mb-4 flex-wrap">
         {tabs.map(t => (
-          <button key={t.id} onClick={() => { setTab(t.id); setSearch(''); }}
-            className={`px-4 py-2 rounded-full text-sm font-medium border transition ${tab === t.id ? 'bg-purple-500 text-white border-purple-400' : 'border-gray-300 text-gray-600 hover:border-purple-400'}`}>
-            {t.label}
+          <button key={t.id} onClick={() => { setTab(t.id); setSearch(''); setDateFrom(''); setDateTo(''); }}
+            className={`relative px-4 py-2 rounded-full text-sm font-medium border transition ${tab === t.id ? 'bg-purple-500 text-white border-purple-400' : 'border-gray-300 text-gray-600 hover:border-purple-400'}`}>
+            {t.label} ({t.count})
+            {t.alert && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+            )}
           </button>
         ))}
       </div>
 
-      {/* Search */}
+      {/* Search + filters */}
       {['groomers', 'customers', 'bookings', 'reviews'].includes(tab) && (
         <div className="mb-4 flex gap-2 flex-wrap items-center">
           <input
@@ -470,12 +511,26 @@ export default function AdminDashboard() {
             className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 w-full max-w-xs"
           />
           {tab === 'bookings' && (
-            <select value={bookingFilter} onChange={e => setBookingFilter(e.target.value)}
-              className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300">
-              {['all', 'pending', 'confirmed', 'completed', 'declined', 'cancelled'].map(s => (
-                <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-              ))}
-            </select>
+            <>
+              <select value={bookingFilter} onChange={e => setBookingFilter(e.target.value)}
+                className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300">
+                {['all', 'pending', 'confirmed', 'completed', 'declined', 'cancelled'].map(s => (
+                  <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                ))}
+              </select>
+              <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+                className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
+                title="From date" />
+              <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+                className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
+                title="To date" />
+              {(dateFrom || dateTo) && (
+                <button onClick={() => { setDateFrom(''); setDateTo(''); }}
+                  className="text-xs text-gray-400 hover:text-gray-600 underline">
+                  Clear dates
+                </button>
+              )}
+            </>
           )}
         </div>
       )}
@@ -483,7 +538,7 @@ export default function AdminDashboard() {
       {/* Pending groomers */}
       {tab === 'pending' && (
         pending.length === 0
-          ? <p className="text-gray-400">No pending groomers.</p>
+          ? <EmptyState icon="✅" title="No pending groomers" subtitle="All groomer applications have been reviewed." />
           : <div className="flex flex-col gap-3">
               {pending.map(p => (
                 <div key={p._id} className="border rounded-xl p-4 flex justify-between items-start">
@@ -505,7 +560,7 @@ export default function AdminDashboard() {
       {/* All groomers */}
       {tab === 'groomers' && (
         filteredGroomers.length === 0
-          ? <p className="text-gray-400">No groomers found.</p>
+          ? <EmptyState icon="✂️" title="No groomers found" subtitle={search ? 'Try a different search term.' : 'No groomers have signed up yet.'} />
           : <div className="flex flex-col gap-3">
               {filteredGroomers.map(p => (
                 <div key={p._id} className="border rounded-xl p-4 flex justify-between items-start">
@@ -532,7 +587,7 @@ export default function AdminDashboard() {
       {/* Customers */}
       {tab === 'customers' && (
         filteredCustomers.length === 0
-          ? <p className="text-gray-400">No customers found.</p>
+          ? <EmptyState icon="👤" title="No customers found" subtitle={search ? 'Try a different search term.' : 'No customers have signed up yet.'} />
           : <div className="flex flex-col gap-3">
               {filteredCustomers.map(u => {
                 const flags = u.cancellationFlags?.length || 0;
@@ -561,19 +616,15 @@ export default function AdminDashboard() {
       {/* All bookings */}
       {tab === 'bookings' && (
         filteredBookings.length === 0
-          ? <p className="text-gray-400">No bookings found.</p>
+          ? <EmptyState icon="📅" title="No bookings found" subtitle="Try adjusting your filters." />
           : <div className="flex flex-col gap-3">
               {filteredBookings.map(b => (
                 <div key={b._id} className="border rounded-xl p-4">
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="font-semibold">{b.service?.name} — ${b.service?.price}</p>
-                      <p className="text-sm text-gray-600">
-                        Customer: {b.customer?.firstName} {b.customer?.lastName}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Groomer: {b.groomer?.firstName} {b.groomer?.lastName}
-                      </p>
+                      <p className="text-sm text-gray-600">Customer: {b.customer?.firstName} {b.customer?.lastName}</p>
+                      <p className="text-sm text-gray-600">Groomer: {b.groomer?.firstName} {b.groomer?.lastName}</p>
                       <p className="text-sm text-gray-400">{formatDate(b.date)} at {formatTime(b.time)}</p>
                       {b.cancelledBy && (
                         <p className="text-xs text-gray-400 mt-0.5">Cancelled by: {b.cancelledBy}</p>
@@ -608,7 +659,7 @@ export default function AdminDashboard() {
       {/* Reviews */}
       {tab === 'reviews' && (
         filteredReviews.length === 0
-          ? <p className="text-gray-400">No reviews found.</p>
+          ? <EmptyState icon="⭐" title="No reviews found" subtitle={search ? 'Try a different search term.' : 'No reviews yet.'} />
           : <div className="flex flex-col gap-3">
               {filteredReviews.map(r => (
                 <div key={r._id} className="border rounded-xl p-4">
@@ -618,9 +669,7 @@ export default function AdminDashboard() {
                         <p className="font-semibold text-sm">{r.customer?.firstName} {r.customer?.lastName}</p>
                         <span className="text-yellow-500">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
                       </div>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        For: {r.groomer?.firstName} {r.groomer?.lastName}
-                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">For: {r.groomer?.firstName} {r.groomer?.lastName}</p>
                       {r.comment && <p className="text-sm text-gray-700 mt-1">{r.comment}</p>}
                       {r.photos?.length > 0 && (
                         <div className="flex gap-1 mt-2 flex-wrap">
@@ -646,18 +695,14 @@ export default function AdminDashboard() {
       {/* Unpaid completed bookings */}
       {tab === 'unpaid' && (
         unpaidBookings.length === 0
-          ? <p className="text-gray-400">No unpaid completed bookings.</p>
+          ? <EmptyState icon="💳" title="No unpaid bookings" subtitle="All completed bookings have been charged." />
           : <div className="flex flex-col gap-3">
               {unpaidBookings.map(b => (
                 <div key={b._id} className="border rounded-xl p-4 flex justify-between items-center gap-4 flex-wrap">
                   <div>
                     <p className="font-semibold text-sm">{b.service?.name || 'Service'} — ${b.totalAmount?.toFixed(2)}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      Customer: {b.customer?.firstName} {b.customer?.lastName} ({b.customer?.email})
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Groomer: {b.groomer?.firstName} {b.groomer?.lastName}
-                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">Customer: {b.customer?.firstName} {b.customer?.lastName} ({b.customer?.email})</p>
+                    <p className="text-xs text-gray-500">Groomer: {b.groomer?.firstName} {b.groomer?.lastName}</p>
                     <p className="text-xs text-gray-400">{formatDate(b.date)} at {formatTime(b.time)}</p>
                   </div>
                   <button
@@ -675,7 +720,7 @@ export default function AdminDashboard() {
       {/* Support inbox */}
       {tab === 'support' && (
         supportConvos.length === 0
-          ? <p className="text-gray-400">No support conversations yet.</p>
+          ? <EmptyState icon="💬" title="No support conversations" subtitle="Users haven't reached out yet." />
           : <div className="flex flex-col gap-3">
               {supportConvos.map(c => {
                 const other = c.participants?.find(p => String(p._id) !== String(user?.id || user?._id)) || {};

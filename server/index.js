@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const authRoutes        = require('./routes/auth');
@@ -17,6 +18,25 @@ const messageRoutes       = require('./routes/messages');
 
 const app = express();
 
+// ── Rate limiting ─────────────────────────────────────────────────────────────
+// Strict limit on auth endpoints to prevent brute-force
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  message: { message: 'Too many attempts, please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// General API limit
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 300,
+  message: { message: 'Too many requests, please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use(cors({
   origin: process.env.CLIENT_URL || '*',
   credentials: true,
@@ -27,7 +47,8 @@ app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
 app.use(express.json({ limit: '10mb' }));
 
-app.use('/api/auth',     authRoutes);
+app.use('/api/auth',     authLimiter, authRoutes);
+app.use('/api',          apiLimiter);
 app.use('/api/groomers', groomerRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/reviews',  reviewRoutes);

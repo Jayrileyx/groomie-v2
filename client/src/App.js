@@ -46,6 +46,9 @@ export default function App() {
       <Elements stripe={stripePromise}>
       <BrowserRouter>
         <ErrorBoundary>
+        <div style={{ background: 'linear-gradient(135deg,#9333ea,#d946ef)', color: '#fff', textAlign: 'center', padding: '8px 16px', fontSize: '13px', fontWeight: 600, letterSpacing: '0.01em' }}>
+          🐾 Groomie is in beta — groomers coming soon!
+        </div>
         <Navbar />
         <main className="max-w-4xl mx-auto px-4 py-8">
           <Routes>

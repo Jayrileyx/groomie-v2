@@ -86,7 +86,6 @@ export default function Navbar() {
   };
 
   return (
-    <>
     <nav style={{background:'linear-gradient(135deg, #9333ea 0%, #a855f7 50%, #d946ef 100%)'}} className="text-white px-6 py-4 flex justify-between items-center shadow-md">
       <Link to="/"><GroomieLogo height={60} light /></Link>
       <div className="flex gap-4 items-center text-sm">
@@ -107,11 +106,5 @@ export default function Navbar() {
         )}
       </div>
     </nav>
-    <div className="text-center text-xs text-purple-400 py-2 border-t border-purple-100 bg-purple-50">
-      <Link to="/terms" className="hover:text-purple-600 mx-2 transition-colors">Terms of Service</Link>
-      ·
-      <Link to="/privacy" className="hover:text-purple-600 mx-2 transition-colors">Privacy Policy</Link>
-    </div>
-    </>
   );
 }

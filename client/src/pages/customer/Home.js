@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
 export default function Home() {
@@ -18,7 +18,7 @@ export default function Home() {
   };
 
   return (
-    <div className="text-center mt-12">
+    <div className="text-center mt-8">
       {/* Hero */}
       <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-3xl px-8 py-14 mb-10 shadow-sm">
         <img src="/icon-192.png" alt="Groomie" className="mx-auto mb-4" style={{ width: 120, height: 120, borderRadius: 28 }} />
@@ -60,8 +60,15 @@ export default function Home() {
         )}
       </div>
 
-      {/* Feature cards */}
-      <div className="grid grid-cols-3 gap-5 text-center">
+      {/* Beta banner */}
+      <div style={{ background: 'linear-gradient(135deg,#9333ea,#d946ef)' }} className="rounded-3xl px-8 py-10 mb-10 text-white text-center shadow-lg">
+        <p className="text-3xl font-bold mb-2">🐾 We're in Beta</p>
+        <p className="text-lg font-medium opacity-90">Groomers are coming soon — we're building something great for your pet.</p>
+        <p className="text-sm opacity-70 mt-3">Sign up now to be first in line when groomers arrive in your city.</p>
+      </div>
+
+      {/* Feature cards — stacked on mobile, 3-col on desktop */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center mb-10">
         <div className="p-6 bg-white border border-purple-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
           <div className="text-4xl mb-3">✅</div>
           <h3 className="font-bold text-purple-700">Verified Groomers</h3>
@@ -77,6 +84,12 @@ export default function Home() {
           <h3 className="font-bold text-purple-700">Easy Booking</h3>
           <p className="text-sm text-gray-500 mt-1">Pick a time, confirm, done — no phone calls needed</p>
         </div>
+      </div>
+
+      {/* Footer links */}
+      <div className="border-t pt-6 pb-4 flex justify-center gap-6 text-xs text-gray-400">
+        <Link to="/terms" className="hover:text-purple-600 hover:underline">Terms of Service</Link>
+        <Link to="/privacy" className="hover:text-purple-600 hover:underline">Privacy Policy</Link>
       </div>
     </div>
   );

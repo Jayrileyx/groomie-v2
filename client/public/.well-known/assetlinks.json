@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.groomieapp.twa",
+    "sha256_cert_fingerprints": ["3C:A7:0F:8D:C5:DA:C5:B5:0C:08:98:58:DE:7C:43:D7:40:E7:3B:43:D3:85:98:18:E0:2B:86:FC:1B:B6:6D:43"]
+  }
+}]

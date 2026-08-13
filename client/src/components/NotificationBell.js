@@ -121,8 +121,8 @@ export default function NotificationBell() {
       {/* Dropdown panel */}
       {open && (
         <div style={{
-          position: 'absolute', top: 'calc(100% + 10px)', right: 0,
-          width: '320px', maxHeight: '420px',
+          position: 'fixed', top: '70px', right: '8px',
+          width: 'min(320px, calc(100vw - 16px))', maxHeight: '420px',
           background: '#fff', borderRadius: '12px',
           boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
           zIndex: 1000, overflow: 'hidden',

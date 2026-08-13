@@ -12,6 +12,7 @@ export default function Messages() {
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showChat, setShowChat] = useState(false); // mobile: toggle list vs chat
   const bottomRef = useRef(null);
   const pollRef = useRef(null);
 
@@ -24,14 +25,12 @@ export default function Messages() {
   const fetchMessages = useCallback(async (convoId) => {
     const res = await axios.get(`/api/messages/${convoId}`, { headers: { Authorization: `Bearer ${token}` } });
     setMessages(res.data);
-    // Update unread to 0 locally
     setConversations(prev => prev.map(c => c._id === convoId ? { ...c, unread: 0 } : c));
   }, [token]);
 
   const withId = searchParams.get('with');
   const bookingId = searchParams.get('booking');
 
-  // Initial load — fetch conversations and open the first one if no ?with= param
   useEffect(() => {
     fetchConversations().then(convos => {
       setLoading(false);
@@ -42,7 +41,6 @@ export default function Messages() {
     });
   }, []);
 
-  // React to ?with= param — runs on mount AND whenever withId changes (e.g. clicking Support while already on /messages)
   useEffect(() => {
     if (!withId) return;
     axios.post('/api/messages/start',
@@ -54,10 +52,10 @@ export default function Messages() {
       fetchMessages(convo._id);
       setConversations(prev => prev.some(c => c._id === convo._id) ? prev : [convo, ...prev]);
       setLoading(false);
+      setShowChat(true); // jump straight to chat on mobile
     }).catch(() => setLoading(false));
   }, [withId]);
 
-  // Poll for new messages every 5s when a conversation is open
   useEffect(() => {
     if (!activeConvo) return;
     clearInterval(pollRef.current);
@@ -68,7 +66,6 @@ export default function Messages() {
     return () => clearInterval(pollRef.current);
   }, [activeConvo?._id]);
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -77,6 +74,7 @@ export default function Messages() {
     setActiveConvo(convo);
     fetchMessages(convo._id);
     setNewMessage('');
+    setShowChat(true); // mobile: switch to chat view
   };
 
   const sendMessage = async (e) => {
@@ -90,7 +88,6 @@ export default function Messages() {
       );
       setMessages(prev => [...prev, res.data]);
       setNewMessage('');
-      // Update conversation preview
       setConversations(prev => prev.map(c =>
         c._id === activeConvo._id
           ? { ...c, lastMessage: newMessage.trim(), lastMessageAt: new Date() }
@@ -105,8 +102,7 @@ export default function Messages() {
 
   const timeLabel = (dateStr) => {
     const d = new Date(dateStr);
-    const now = new Date();
-    const diff = (now - d) / 1000;
+    const diff = (Date.now() - d) / 1000;
     if (diff < 60) return 'just now';
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
     if (diff < 86400) return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -115,86 +111,86 @@ export default function Messages() {
 
   if (loading) return <p className="text-center mt-10 text-gray-400">Loading messages...</p>;
 
-  return (
-    <div className="flex h-[calc(100vh-80px)] border rounded-xl overflow-hidden bg-white">
-
-      {/* Sidebar — conversation list */}
-      <div className="w-80 border-r flex flex-col flex-shrink-0">
-        <div className="px-4 py-3 border-b bg-gray-50">
-          <h2 className="font-bold text-purple-600 text-lg">Messages</h2>
-        </div>
-
-        {conversations.length === 0 ? (
-          <p className="text-gray-400 text-sm text-center mt-8 px-4">No conversations yet.</p>
-        ) : (
-          <div className="overflow-y-auto flex-1">
-            {conversations.map(c => {
-              const other = getOtherParticipant(c);
-              const isActive = activeConvo?._id === c._id;
-              return (
-                <div
-                  key={c._id}
-                  onClick={() => openConversation(c)}
-                  className={`flex items-start gap-3 px-4 py-3 cursor-pointer border-b hover:bg-purple-50 transition ${isActive ? 'bg-purple-50' : ''}`}
-                >
-                  {other.avatar ? (
-                    <img src={other.avatar} alt="avatar" className="w-10 h-10 rounded-full object-cover flex-shrink-0 mt-0.5" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-500 font-bold flex-shrink-0 mt-0.5">
-                      {(other.firstName?.[0] || '?').toUpperCase()}
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center">
-                      <p className="font-semibold text-sm truncate">{other.firstName} {other.lastName}</p>
-                      <p className="text-xs text-gray-400 flex-shrink-0 ml-1">{timeLabel(c.lastMessageAt)}</p>
-                    </div>
-                    <p className="text-xs text-gray-500 truncate">{c.lastMessage || 'Start the conversation'}</p>
-                  </div>
-                  {c.unread > 0 && (
-                    <span className="bg-purple-500 text-white text-xs rounded-full px-2 py-0.5 font-bold flex-shrink-0 self-center">
-                      {c.unread}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+  const ConversationList = () => (
+    <div className="flex flex-col h-full">
+      <div className="px-4 py-3 border-b bg-gray-50">
+        <h2 className="font-bold text-purple-600 text-lg">Messages</h2>
       </div>
+      {conversations.length === 0 ? (
+        <p className="text-gray-400 text-sm text-center mt-8 px-4">No conversations yet.</p>
+      ) : (
+        <div className="overflow-y-auto flex-1">
+          {conversations.map(c => {
+            const other = getOtherParticipant(c);
+            const isActive = activeConvo?._id === c._id;
+            return (
+              <div
+                key={c._id}
+                onClick={() => openConversation(c)}
+                className={`flex items-start gap-3 px-4 py-3 cursor-pointer border-b hover:bg-purple-50 transition ${isActive ? 'bg-purple-50' : ''}`}
+              >
+                {other.avatar ? (
+                  <img src={other.avatar} alt="avatar" className="w-10 h-10 rounded-full object-cover flex-shrink-0 mt-0.5" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-500 font-bold flex-shrink-0 mt-0.5">
+                    {(other.firstName?.[0] || '?').toUpperCase()}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-center">
+                    <p className="font-semibold text-sm truncate">{other.firstName} {other.lastName}</p>
+                    <p className="text-xs text-gray-400 flex-shrink-0 ml-1">{timeLabel(c.lastMessageAt)}</p>
+                  </div>
+                  <p className="text-xs text-gray-500 truncate">{c.lastMessage || 'Start the conversation'}</p>
+                </div>
+                {c.unread > 0 && (
+                  <span className="bg-purple-500 text-white text-xs rounded-full px-2 py-0.5 font-bold flex-shrink-0 self-center">
+                    {c.unread}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 
-      {/* Chat area */}
-      <div className="flex-1 flex flex-col min-w-0">
+  const ChatArea = () => {
+    const other = activeConvo ? getOtherParticipant(activeConvo) : null;
+    return (
+      <div className="flex flex-col h-full">
         {!activeConvo ? (
-          <div className="flex-1 flex items-center justify-center text-gray-400">
+          <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
             Select a conversation to start messaging
           </div>
         ) : (
           <>
             {/* Chat header */}
-            <div className="px-5 py-3 border-b bg-gray-50 flex items-center gap-3">
-              {(() => {
-                const other = getOtherParticipant(activeConvo);
-                return (
-                  <>
-                    {other.avatar ? (
-                      <img src={other.avatar} alt="avatar" className="w-9 h-9 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center text-purple-500 font-bold text-sm">
-                        {(other.firstName?.[0] || '?').toUpperCase()}
-                      </div>
-                    )}
-                    <div>
-                      <p className="font-semibold text-sm">{other.firstName} {other.lastName}</p>
-                      <p className="text-xs text-gray-400 capitalize">{other.role}</p>
-                    </div>
-                  </>
-                );
-              })()}
+            <div className="px-4 py-3 border-b bg-gray-50 flex items-center gap-3">
+              {/* Back button — mobile only */}
+              <button
+                onClick={() => setShowChat(false)}
+                className="sm:hidden text-purple-500 font-bold text-lg mr-1 leading-none"
+                aria-label="Back to conversations"
+              >
+                ←
+              </button>
+              {other?.avatar ? (
+                <img src={other.avatar} alt="avatar" className="w-9 h-9 rounded-full object-cover" />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center text-purple-500 font-bold text-sm">
+                  {(other?.firstName?.[0] || '?').toUpperCase()}
+                </div>
+              )}
+              <div>
+                <p className="font-semibold text-sm">{other?.firstName} {other?.lastName}</p>
+                <p className="text-xs text-gray-400 capitalize">{other?.role}</p>
+              </div>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
+            <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
               {messages.length === 0 && (
                 <p className="text-center text-gray-400 text-sm mt-8">No messages yet. Say hello!</p>
               )}
@@ -202,7 +198,7 @@ export default function Messages() {
                 const isMe = String(m.sender?._id || m.sender) === String(user?.id || user?._id);
                 return (
                   <div key={m._id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl text-sm ${
+                    <div className={`max-w-[75%] sm:max-w-md px-4 py-2 rounded-2xl text-sm ${
                       isMe
                         ? 'bg-purple-500 text-white rounded-br-sm'
                         : 'bg-gray-100 text-gray-800 rounded-bl-sm'
@@ -238,6 +234,25 @@ export default function Messages() {
           </>
         )}
       </div>
-    </div>
+    );
+  };
+
+  return (
+    <>
+      {/* Mobile: toggle between list and chat */}
+      <div className="sm:hidden border rounded-xl overflow-hidden bg-white" style={{ height: 'calc(100vh - 100px)' }}>
+        {!showChat ? <ConversationList /> : <ChatArea />}
+      </div>
+
+      {/* Desktop: side-by-side */}
+      <div className="hidden sm:flex h-[calc(100vh-80px)] border rounded-xl overflow-hidden bg-white">
+        <div className="w-80 border-r flex flex-col flex-shrink-0">
+          <ConversationList />
+        </div>
+        <div className="flex-1 flex flex-col min-w-0">
+          <ChatArea />
+        </div>
+      </div>
+    </>
   );
 }
